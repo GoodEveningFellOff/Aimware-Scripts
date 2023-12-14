@@ -1,4 +1,7 @@
-local _DEBUG = false;
+local _DEBUG = true;
+
+local CLAMP = function(a,b,c)return(a<b)and b or(a>c)and c or a;end;
+
 
 local g_stBombRadius = {
 	--map_showbombradius
@@ -100,16 +103,25 @@ callbacks.Register("DrawESP", function(ctx)
 	end
 
 	fDamage = math.floor(fDamage + 0.75);
-	
-	if fDamage >= g_iLocalHealth then
-		ctx:Color(255, 55, 55, 255)
-		ctx:AddTextBottom("LETHAL")
 
-		return;
+	if fDamage > 0  then
+		local v = math.floor(255 - 200 * CLAMP(fDamage / g_iLocalHealth, 0, 1));
+	
+		ctx:Color(255, v, v, 255)
+		ctx:AddTextBottom((fDamage >= g_iLocalHealth) and "LETHAL" or ("-%0.0fHP"):format(fDamage))
 	end
 
-	local v = math.floor(255 - 200 * math.max(fDamage / g_iLocalHealth, 0));
-	
-	ctx:Color(255, v, v, 255)
-	ctx:AddTextBottom(("-%0.0fHP"):format(fDamage));
+	if pEnt:GetPropBool("m_bBeingDefused") then
+		local fDelta = pEnt:GetPropFloat("m_flC4Blow") - pEnt:GetPropFloat("m_flDefuseCountDown");
+
+		if fDelta < 0 then
+			ctx:Color(255, 55, 55, 255);
+			ctx:AddTextTop("NO TIME!");
+
+		else
+			ctx:Color(55, 255, 55, 255);
+			ctx:AddTextTop(("+%0.02fs"):format(fDelta));
+
+		end
+	end
 end)
