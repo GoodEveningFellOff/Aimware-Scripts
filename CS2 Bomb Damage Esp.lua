@@ -93,35 +93,51 @@ callbacks.Register("DrawESP", function(ctx)
 	if not pEnt:GetPropBool("m_bBombTicking") then
 		return;
 	end
-	
-	local fDistance = (pEnt:GetAbsOrigin() - g_vLocalViewOrigin):Length();
 
+	local flCurTime = globals.CurTime();
+	local flC4Blow = pEnt:GetPropFloat("m_flC4Blow");
+	local flDefuseCountDown = pEnt:GetPropFloat("m_flDefuseCountDown");
+	
+	if pEnt:GetPropBool("m_bBeingDefused") then
+		local fDelta = flC4Blow - flDefuseCountDown;
+
+		if fDelta < 0 then
+			ctx:Color(255, 55, 55, 255);
+			ctx:AddTextBottom(("%0.02fs"):format(fDelta));
+			ctx:AddTextBottom(("%0.2fs"):format(flC4Blow - flCurTime));
+
+		else
+			ctx:Color(55, 255, 55, 255);
+			ctx:AddTextBottom(("+%0.02fs"):format(fDelta));
+			ctx:AddTextBottom(("%0.2fs"):format(flDefuseCountDown - flCurTime));
+		end
+
+	else
+		ctx:Color(255, 255, 255, 255)
+		ctx:AddTextBottom(("%0.2fs"):format(flC4Blow - flCurTime));
+	end
+
+	local fDistance = (pEnt:GetAbsOrigin() - g_vLocalViewOrigin):Length();
 	local fDamage = (g_iBombRadius / 3.5) * math.exp(fDistance^2 / (-2 * (g_iBombRadius / 3)^2));
 
 	if g_iLocalArmor > 0 then
-		fDamage = (fDamage / 4 > g_iLocalArmor) and (fDamage - g_iLocalArmor * 2) or (fDamage / 2);
+		local fReducedDamage = fDamage / 2;
+		
+		if g_iLocalArmor < fReducedDamage then
+			local fReducedFraction = g_iLocalArmor / fReducedDamage;
+			fDamage = (fReducedFraction * fReducedDamage) + (1 - fReducedFraction) * fDamage;
+
+		else
+			fDamage = fReducedDamage;
+		end
 	end
 
-	fDamage = math.floor(fDamage + 0.75);
+	fDamage = math.floor(fDamage + 0.5);
 
 	if fDamage > 0  then
 		local v = math.floor(255 - 200 * CLAMP(fDamage / g_iLocalHealth, 0, 1));
 	
 		ctx:Color(255, v, v, 255)
 		ctx:AddTextBottom((fDamage >= g_iLocalHealth) and "LETHAL" or ("-%0.0fHP"):format(fDamage))
-	end
-
-	if pEnt:GetPropBool("m_bBeingDefused") then
-		local fDelta = pEnt:GetPropFloat("m_flC4Blow") - pEnt:GetPropFloat("m_flDefuseCountDown");
-
-		if fDelta < 0 then
-			ctx:Color(255, 55, 55, 255);
-			ctx:AddTextTop("NO TIME!");
-
-		else
-			ctx:Color(55, 255, 55, 255);
-			ctx:AddTextTop(("+%0.02fs"):format(fDelta));
-
-		end
 	end
 end)
