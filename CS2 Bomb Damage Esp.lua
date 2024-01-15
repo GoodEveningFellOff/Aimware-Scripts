@@ -82,7 +82,7 @@ end)
 callbacks.Register("DrawESP", function(ctx)
 	local pEnt = ctx:GetEntity();
 
-	if not pEnt or g_iLocalHealth <= 0 then
+	if not pEnt then
 		return;
 	end
 
@@ -117,6 +117,10 @@ callbacks.Register("DrawESP", function(ctx)
 		ctx:AddTextBottom(("%0.2fs"):format(flC4Blow - flCurTime));
 	end
 
+	if g_iLocalHealth <= 0 then
+		return;
+	end
+	
 	local fDistance = (pEnt:GetAbsOrigin() - g_vLocalViewOrigin):Length();
 	local fDamage = (g_iBombRadius / 3.5) * math.exp(fDistance^2 / (-2 * (g_iBombRadius / 3)^2));
 
