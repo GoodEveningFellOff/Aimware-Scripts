@@ -1,12 +1,15 @@
-local guiStrength = gui.Slider(gui.Reference("Visuals", "Other", "Effects"), "flashbang_strength", "Flash Strength", 1, 0, 1, 0.01);
-guiStrength:SetDescription("Override flashbang strength.");
+local guiEnabled = gui.Checkbox(gui.Reference("Visuals", "Other", "Effects"), "flashbang_override", "Override Flashbang", false);
+guiEnabled:SetDescription("Override flashbang colour.");
+
+local guiColor = gui.ColorPicker(guiEnabled, "clr", "clr", 255, 255, 255, 255);
 
 local g_flFlashBangTime = 0;
 callbacks.Register("Draw", function()
-    gui.SetValue("esp.other.noflash", 1);
+	local bEnabled = guiEnabled:GetValue();
+    gui.SetValue("esp.other.noflash", bEnabled);
 
     local pLocalPlayer = entities.GetLocalPlayer();
-    if not pLocalPlayer then
+    if not pLocalPlayer or not bEnabled then
         return;
     end
 
@@ -30,12 +33,14 @@ callbacks.Register("Draw", function()
         return;
     end
 
-    local flAlpha = 255;
+    local flAlpha = 1;
 
     if flDelta < 3 then
-        flAlpha = 255 * (flDelta / 3);
+        flAlpha = flDelta / 3;
     end
 
-    draw.Color(255, 255, 255, math.floor(flAlpha * guiStrength:GetValue()));
+	local r, g, b, a = guiColor:GetValue();
+	a = math.floor(flAlpha * a);
+    draw.Color(r, g, b, a);
     draw.FilledRect(0, 0, draw.GetScreenSize());
 end)
