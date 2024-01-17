@@ -63,6 +63,39 @@ local function OnTick()
 		return;
 	end
 
+	if not pLocalPlayer:IsAlive() then
+
+		local iLocalIndex = pLocalPlayer:GetIndex();
+		local pObservedPlayer = nil;
+		local aCCSPlayerController = entities.FindByClass("CCSPlayerController");
+		if #aCCSPlayerController == 0 then
+			return;
+		end
+
+		for _, pEnt in pairs(aCCSPlayerController) do
+			local pPawn = pEnt:GetPropEntity("m_hPawn");
+
+			if pPawn:GetIndex() == iLocalIndex then
+				local pObserver = pEnt:GetPropEntity("m_hObserverPawn");
+
+				if pObserver then
+					pLocalPlayer = pObserver:GetPropEntity("m_hDetectParentChange");
+				end
+
+				break;
+			end
+		end
+
+		if not pLocalPlayer then
+			return;
+		end
+	end
+
+	if pLocalPlayer:GetClass() ~= "C_CSPlayerPawn" then
+		g_iLocalHealth = 0;
+		return;
+	end
+
 	g_iLocalHealth = pLocalPlayer:GetPropInt("m_iHealth") or 0;
 	g_iLocalArmor = pLocalPlayer:GetPropInt("m_ArmorValue") or 0;
 	g_vLocalViewOrigin = pLocalPlayer:GetAbsOrigin() + (pLocalPlayer:GetPropVector("m_vecViewOffset") or Vector3(0, 0, 62));
