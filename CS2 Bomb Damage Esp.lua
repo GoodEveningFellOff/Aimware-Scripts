@@ -66,13 +66,7 @@ local function OnTick()
 	if not pLocalPlayer:IsAlive() then
 
 		local iLocalIndex = pLocalPlayer:GetIndex();
-		local pObservedPlayer = nil;
-		local aCCSPlayerController = entities.FindByClass("CCSPlayerController");
-		if #aCCSPlayerController == 0 then
-			return;
-		end
-
-		for _, pEnt in pairs(aCCSPlayerController) do
+		for _, pEnt in pairs(entities.FindByClass("CCSPlayerController")) do
 			local pPawn = pEnt:GetPropEntity("m_hPawn");
 
 			if pPawn:GetIndex() == iLocalIndex then
