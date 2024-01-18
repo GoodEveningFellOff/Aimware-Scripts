@@ -27,7 +27,9 @@ callbacks.Register("Draw", function()
     local iLocalIndex = pLocalPlayer:GetIndex();
     local pLocalPlayerController = nil;
     for _, pEnt in pairs(entities.FindByClass("CCSPlayerController")) do
-        if pEnt:GetPropEntity("m_hPlayerPawn"):GetIndex() == iLocalIndex then
+        local pPawn = pEnt:GetPropEntity("m_hPlayerPawn");
+
+        if pPawn:GetIndex() == iLocalIndex then
             pLocalPlayerController = pEnt;
             break;
         end
@@ -45,6 +47,10 @@ callbacks.Register("Draw", function()
     end
 
     if not pBomb then
+        return StopDefusing();
+    end
+
+    if pLocalPlayerController:GetClass() ~= "CCSPlayerController" or pBomb:GetClass() ~= "C_PlantedC4" then
         return StopDefusing();
     end
 
