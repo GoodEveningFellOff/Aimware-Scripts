@@ -82,8 +82,9 @@ callbacks.Register("Draw", function()
     local flFadeOutDuration = math.min(g_flFlashDuration - 0.1, 3);
 
     local flDelta = g_flFlashBangTime - globals.CurTime();
-    if math.abs(flDelta) > 60 then
+    if math.abs(flDelta) > g_flFlashDuration * 2 then
         g_flFlashBangTime = 0;
+        g_flFlashDuration = 0;
         return;
     end
 
