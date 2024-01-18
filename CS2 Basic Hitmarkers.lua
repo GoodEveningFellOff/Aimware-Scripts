@@ -30,12 +30,12 @@ callbacks.Register("Draw", function()
     local flRealTime = globals.RealTime();
     for i, stData in pairs(g_aHitmarkers) do
 
-        local flDelta = math.abs(flRealTime - stData.m_flTime) / 5;
+        local flDelta = math.abs(flRealTime - stData.m_flTime) / 3;
         if flDelta > 1 then
             g_aHitmarkers[i] = nil;
 
         else
-            local x, y = client.WorldToScreen(stData.m_vecImpact + Vector3(0, 0, flDelta * 50));
+            local x, y = client.WorldToScreen(stData.m_vecImpact + Vector3(0, 0, flDelta * 100));
             if x and y then
                 local sText = tostring(stData.m_iDamage);
                 local w, h = draw.GetTextSize(sText);
