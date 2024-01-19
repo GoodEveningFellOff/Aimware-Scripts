@@ -1,4 +1,28 @@
-local g_iFont = draw.CreateFont("Tahoma", 20, 1000);
+local guiEnabled = gui.Checkbox(gui.Reference("Visuals", "World", "Helper", "Hit Effects"), "damage", "Damage", false);
+local guiHeadshot = gui.ColorPicker(guiEnabled, "headshot", "Headshot", 255,  55,  55, 255);
+local guiBodyshot = gui.ColorPicker(guiEnabled, "bodyshot", "Bodyshot", 255, 255, 255, 255);
+
+local g_aFonts = {};
+do
+    for flScale, sKey in pairs({
+        [0.75] = 0;
+        [1.00] = 1;
+        [1.25] = 2;
+        [1.50] = 3;
+        [1.75] = 4;
+        [2.00] = 5;
+        [2.25] = 6;
+        [2.50] = 7;
+        [2.75] = 8;
+        [3.00] = 9;
+    }) do
+
+        g_aFonts[sKey] = draw.CreateFont("Tahoma", 
+            math.floor(flScale * 14 + 0.5), 1000);
+
+    end
+end
+
 
 local g_iLastClearTick = 0;
 local g_aImpacts = {};
@@ -20,12 +44,20 @@ callbacks.Register("Draw", function()
         g_iLastClearTick = globals.TickCount();
     end
 
+    if not guiEnabled:GetValue() then
+        g_aHitmarkers = {};
+        return;
+    end
+
     local pLocalPlayer = entities.GetLocalPlayer();
     if pLocalPlayer then
         g_iLocalIndex = pLocalPlayer:GetIndex();
     end
 
-    draw.SetFont(g_iFont);
+    draw.SetFont(g_aFonts[gui.GetValue("adv.dpi.elements")]);
+
+    local r1, g1, b1, a1 = guiHeadshot:GetValue();
+    local r2, g2, b2, a2 = guiBodyshot:GetValue();
 
     local flRealTime = globals.RealTime();
     for i, stData in pairs(g_aHitmarkers) do
@@ -41,9 +73,9 @@ callbacks.Register("Draw", function()
                 local w, h = draw.GetTextSize(sText);
 
                 if stData.m_bHeadshot then
-                    draw.Color(255, 55, 55, math.floor(255 * (1 - flDelta)));
+                    draw.Color(r1, g1, b1, math.floor(a1 * (1 - flDelta)));
                 else
-                    draw.Color(255, 255, 255, math.floor(255 * (1 - flDelta)));
+                    draw.Color(r2, g2, b2, math.floor(a2 * (1 - flDelta)));
                 end
 
                 draw.TextShadow(math.floor(x - w / 2), math.floor(y - h / 2), sText)
@@ -51,18 +83,14 @@ callbacks.Register("Draw", function()
         end
     end
 
-    for _ = 1, 5 do
-        local bPassed = true;
-        for i = 1, #g_aHitmarkers do
-            if not g_aHitmarkers[i] then
-                bPassed = false;
-                table.remove(g_aHitmarkers, i);
-                break;
-            end
-        end
+    local i, len = 1, #g_aHitmarkers;
+    while(i < len) do
+        if not g_aHitmarkers[i] then
+            len = len - 1;
+            table.remove(g_aHitmarkers, i);
 
-        if bPassed then
-            break;
+        else
+            i = i + 1;
         end
     end
 end)
