@@ -1,52 +1,24 @@
-local _DEBUG = true;
-
 local CLAMP = function(a,b,c)return(a<b)and b or(a>c)and c or a;end;
 
+local GetBombRadius = function() return 1750; end;
+do
+    http.Get("https://raw.githubusercontent.com/GoodEveningFellOff/Aimware-Scripts/main/Utils/CS2%20GetBombRadiusFn.lua", function(sData)
+        local fileGBRF = file.Open("GetBombRadiusFn.txt", "w");
+        fileGBRF:Write(sData); fileGBRF:Close();
+        local bStatus, pFn = pcall(function() return loadstring(sData)(); end);
+        if bStatus then GetBombRadius = pFn; end
+    end);
 
-local g_stBombRadius = {
-	--map_showbombradius
-	["( 0, 0, 0 ),( 0, 0, 0 )"]                             = 1750; -- Game's Default Value
-	["( -440, -2150, -168 ),( -2048, 256, -151 )"]          = 2275; -- Mirage
-	["( -2136, 662, 506 ),( -1104, 64, 108 )"]              = 2275; -- Overpass
-	["( -293.5, -621, 11791.5 ),( -2248, 797.5, 11758 )"]   = 1750; -- Vertigo
-	["( -1392, 844, 68 ),( 886.5, 62, 144 )"]               = 2275; -- Ancient
-	["( 1976, 462, 180 ),( 351.99997, 2768, 173 )"]         = 2170; -- Inferno
-	["( 688, -719.99994, -368 ),( 592, -1008, -748 )"]      = 2275; -- Nuke
-	["( 1237.4761, 1953.5, -181.5 ),( -1040, 694, -2 )"]    = 1575; -- Anubis
-	["( 1112, 2480, 144 ),( -1536, 2680, 48 )"]             = 1750; -- Dust 2
-};
-
-local function GetBombRadius()
-	local iBombRadius = 1750; -- Game's Default Value
-	local sFormat = "%s,%s";
-
-	local aC_CSPlayerResource = entities.FindByClass("C_CSPlayerResource");
-
-	if type(aC_CSPlayerResource) ~= "table" then
-		return;
-	end
-
-	if #aC_CSPlayerResource <= 0 then
-		return;
-	end
-
-	for _, ent in pairs(aC_CSPlayerResource) do
-		local sIdentifier = sFormat:format(
-			ent:GetPropVector("m_bombsiteCenterA") or "",
-			ent:GetPropVector("m_bombsiteCenterB") or ""
-		);
-
-		local v = g_stBombRadius[sIdentifier];
-		if not v and _DEBUG then
-			print(("[\"%s\"]"):format(sIdentifier));
-		end
-
-		iBombRadius = math.max(iBombRadius, v or 0);
-	end
-
-	return iBombRadius;
+    local bStatus, sData = pcall(function()
+        local fileGBRF = file.Open("GetBombRadiusFn.txt", "r");
+        local str = fileGBRF:Read(); fileGBRF:Close(); return str;
+    end);
+    
+    if bStatus then
+        local bStatus, pFn = pcall(function() return loadstring(sData)(); end);
+        if bStatus then GetBombRadius = pFn; end
+    end
 end
-
 
 local g_iTickCount = 0;
 local g_iLastTickCount = 0;
