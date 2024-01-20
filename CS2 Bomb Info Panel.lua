@@ -25,26 +25,15 @@ do
     end
 end
 
-local function UseMenuColor(sPath)
-    local r, g, b, a = gui.GetValue(sPath);
-    
-    return function()
-        draw.Color(r, g, b, a);
-    end
-end
-
 local g_aFonts = {};
-local function GetFont(flScale, i)
-    local t = g_aFonts[flScale];
-    if not t then
-        g_aFonts[flScale] = {
-            draw.CreateFont("Bahnschrift", math.floor(13 * flScale), 500)
-        }; 
-
-        t = g_aFonts[flScale];
+local function GetFont(flScale)
+    local f = g_aFonts[flScale];
+    if not f then
+        g_aFonts[flScale] = draw.CreateFont("Bahnschrift", math.floor(13 * flScale), 500)
+        return g_aFonts[flScale];
     end
 
-    return t[i];
+    return f;
 end
 
 local BOMB_NOTFOUND = 0;
@@ -75,6 +64,13 @@ local g_stBombDamage = {
     m_flDamage = 0;
     m_bLethal = false;
 };
+
+local g_bWasMouseDown = false;
+local g_bMouseDown = false;
+local g_bDragging = false;
+local g_iMouseDX = 0;
+local g_iMouseDY = 0;
+local g_iLastTick = 0;
 
 local function UpdateBombState(pC4, pPlantedC4)
     if not pC4 and not pPlantedC4 then
@@ -223,105 +219,114 @@ local function GetBombInformation()
     g_stBombDamage.m_bLethal = (flDamage >= iHealth);
 end
 
-local g_bWasMouseDown = false;
-local g_bMouseDown = false;
-local g_bDragging = false;
-local g_iMouseDX = 0;
-local g_iMouseDY = 0;
-
 callbacks.Register("Draw", function()
-    GetBombInformation();
+    if globals.MaxClients() <= 1 then
+        g_bDragging = false;
+        return;
+    end
 
+    local iTick = globals.TickCount();
     local flCurTime = globals.CurTime();
 
+    if iTick ~= g_iLastTick then
+        GetBombInformation();
+        g_iLastTick = iTick;
+    end
+
     local aElements = {};
-    if g_iBombState == BOMB_NOTFOUND or g_iBombState == BOMB_DEAD then
-        aElements[#aElements + 1] = {255, 255, 255, "No Bomb"};
+    if not (g_iBombState == BOMB_NOTFOUND or g_iBombState == BOMB_DEAD or g_iBombState == BOMB_DROPPED) then
+        if g_iBombState == BOMB_HELD then
+            aElements[#aElements + 1] = {255, 255, 255, ("%s has the bomb"):format(g_sBombOwner)};
 
-    elseif g_iBombState == BOMB_DROPPED then
-        aElements[#aElements + 1] = {255, 255, 255, "Bomb Dropped"};
-
-    elseif g_iBombState == BOMB_HELD then
-        aElements[#aElements + 1] = {255, 255, 255, ("%s has the bomb"):format(g_sBombOwner)};
-
-    else
-        if g_iBombState == BOMB_PLANTING then
-            aElements[#aElements + 1] = {255, 255, 255, ("Planting: %0.1fs"):format(math.max(g_stBombAction.m_flEndTime - flCurTime, 0))};
-        end
-    
-        local flBombTime = math.max(g_stBombTimer.m_flEndTime - flCurTime, 0);
-        if g_iBombState == BOMB_DEFUSING then
-            local flDefuseTime = math.max(g_stBombAction.m_flEndTime - flCurTime, 0);
-    
-            if flDefuseTime <= flBombTime then
-                aElements[#aElements + 1] = {55, 255, 55, ("Defusing: %0.1fs"):format(flDefuseTime)};
-            else
-                aElements[#aElements + 1] = {255, 55, 55, ("Defusing: %0.1fs"):format(flDefuseTime)};
+        else
+            if g_iBombState == BOMB_PLANTING then
+                aElements[#aElements + 1] = {255, 255, 255, ("Planting: %0.1fs"):format(math.max(g_stBombAction.m_flEndTime - flCurTime, 0))};
             end
-        end
-            
-    
-        if g_iBombState > BOMB_PLANTING then
-            aElements[#aElements + 1] = {255, 255, 255, ("Timer: %0.1fs"):format(flBombTime)};
-    
-            if g_stBombDamage.m_flDamage > 0 then
-                if g_stBombDamage.m_bLethal then
-                    aElements[#aElements + 1] = {255, 55, 55, "Damage: Lethal"};
+        
+            local flBombTime = math.max(g_stBombTimer.m_flEndTime - flCurTime, 0);
+            if g_iBombState == BOMB_DEFUSING then
+                local flDefuseTime = math.max(g_stBombAction.m_flEndTime - flCurTime, 0);
+        
+                if flDefuseTime <= flBombTime then
+                    aElements[#aElements + 1] = {55, 255, 55, ("Defusing: %0.1fs"):format(flDefuseTime)};
                 else
-                    aElements[#aElements + 1] = {55, 255, 55, ("Damage: %0.0fhp"):format(g_stBombDamage.m_flDamage)};
+                    aElements[#aElements + 1] = {255, 55, 55, ("Defusing: %0.1fs"):format(flDefuseTime)};
                 end
             end
-        end
-    
-        if g_iBombState >= BOMB_PLANTING then
-            aElements[#aElements + 1] = {255, 255, 255, "Site: " .. g_cBombSite};
+                
+        
+            if g_iBombState > BOMB_PLANTING then
+                aElements[#aElements + 1] = {255, 255, 255, ("Timer: %0.1fs"):format(flBombTime)};
+        
+                if g_stBombDamage.m_flDamage > 0 then
+                    if g_stBombDamage.m_bLethal then
+                        aElements[#aElements + 1] = {255, 55, 55, "Damage: Lethal"};
+                    else
+                        aElements[#aElements + 1] = {55, 255, 55, ("Damage: %0.0fhp"):format(g_stBombDamage.m_flDamage)};
+                    end
+                end
+            end
+        
+            if g_iBombState >= BOMB_PLANTING then
+                aElements[#aElements + 1] = {255, 255, 255, "Site: " .. g_cBombSite};
+            end
         end
     end
 
     local flScale = gui.GetValue("adv.dpi") * 0.25 + 0.75;
-    local fontMain = GetFont(flScale, 1);
-    draw.SetFont(fontMain);
+    draw.SetFont(GetFont(flScale));
 
-    local clrHeaderBackground = UseMenuColor("theme.header.bg");
-    local clrHeaderLine       = UseMenuColor("theme.header.line");
-    local clrHeaderText       = UseMenuColor("theme.header.text");
-
-    local iRounding = math.floor(4 * flScale);
-    local iHeaderSize = math.floor(18 * flScale);
-    local iFooterSize = math.floor(4 * flScale);
     local iLineSize = math.floor(2 * flScale);
-    local iTextOffset = math.floor(8 * flScale);
+    local iRounding = iLineSize * 2;
+    local iFooterSize = iRounding;
+    local iTextOffset = iLineSize * 4;
+    local iHeaderSize = math.floor(18 * flScale);
     local _, iTextSize = draw.GetTextSize("|");
     iTextSize = math.floor(iTextSize * 2);
 
     local iScreenWidth, iScreenHeight = draw.GetScreenSize();
-    local x1, y1 = guiX:GetValue(), guiY:GetValue();
-    local w, h = math.floor(200 * flScale), math.floor((#aElements + 0.75) * iTextSize) + iHeaderSize + iFooterSize;
+    local x1, y1 = guiX:GetValue() or 0, guiY:GetValue() or 0;
+    local w, h = math.floor(200 * flScale), math.floor(math.max(#aElements + 0.75, 1) * iTextSize) + iHeaderSize + iFooterSize;
     local x2, y2 = x1 + w, y1 + h;
 
-    
-    g_bMouseDown = input.IsButtonDown(1);
-    if g_bMouseDown and not g_bWasMouseDown then
-        local mx, my = input.GetMousePos();
-        if mx > x1 and mx < x2 and my > y1 and my < y1 + iHeaderSize then
-            g_bDragging = true;
-            g_iMouseDX = mx - x1;
-            g_iMouseDY = my - y1;
+    if guiWindow:IsActive() then
+        g_bMouseDown = input.IsButtonDown(1);
+        if g_bMouseDown and not g_bWasMouseDown then
+            local mx, my = input.GetMousePos();
+            if mx > x1 and mx < x2 and my > y1 and my < y1 + iHeaderSize then
+                g_bDragging = true;
+                g_iMouseDX = mx - x1;
+                g_iMouseDY = my - y1;
+            end
         end
-    end
 
-    if g_bDragging and g_bMouseDown and guiWindow:IsActive() then
-        local mx, my = input.GetMousePos();
-        mx = mx - g_iMouseDX;
-        my = my - g_iMouseDY;
+        if g_bDragging and g_bMouseDown then
+            local mx, my = input.GetMousePos();
+            mx = mx - g_iMouseDX;
+            my = my - g_iMouseDY;
 
-        
-        guiX:SetValue((mx < 0) and 0 or (mx + iHeaderSize > iScreenWidth) and iScreenWidth - iHeaderSize or mx);
-        guiY:SetValue((my < 0) and 0 or (my + iHeaderSize > iScreenHeight) and iScreenHeight - iHeaderSize or my);
+            
+            guiX:SetValue((mx < 0) and 0 or (mx + iHeaderSize > iScreenWidth) and iScreenWidth - iHeaderSize or mx);
+            guiY:SetValue((my < 0) and 0 or (my + iHeaderSize > iScreenHeight) and iScreenHeight - iHeaderSize or my);
+        else
+            g_bDragging = false;
+        end
+        g_bWasMouseDown = g_bMouseDown;
+
     else
+        if x1 + iHeaderSize > iScreenWidth then
+            guiX:SetValue(iScreenWidth - iHeaderSize);
+        end
+
+        if y1 + iHeaderSize > iScreenHeight then
+            guiY:SetValue(iScreenHeight - iHeaderSize);
+        end
+
+        g_bMouseDown = false;
+        g_bWasMouseDown = false;
         g_bDragging = false;
     end
-    g_bWasMouseDown = g_bMouseDown;
+    
 
     draw.Color(gui.GetValue("theme.ui2.border"));
     draw.RoundedRect(x1 - 1, y1 - 1, x2 + 1, y2 + 1, iRounding, 1, 1, 1, 1);
