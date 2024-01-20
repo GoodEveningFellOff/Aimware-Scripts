@@ -32,45 +32,54 @@ local GetActiveSubPath = (function()
     end
 end)();
 
-local stScreen = {
-    m_iWidth      = 0;
-    m_iHeight     = 0;
-    m_iHalfWidth  = 0;
-    m_iHalfHeight = 0;
-};
-
-local function UpdateScreenSize()
-    local iWidth, iHeight = draw.GetScreenSize();
-
-    if iWidth == stScreen.m_iWidth and iHeight == stScreen.m_iHeight then
-        return;
-    end
-
-    stScreen.m_iWidth      = iWidth;
-    stScreen.m_iHeight     = iHeight;
-    stScreen.m_iHalfWidth  = math.floor(iWidth / 2);
-    stScreen.m_iHalfHeight = math.floor(iHeight / 2);
-end
-
 local function GetAimbotFov(bRage)
     if bRage then
-        return gui.GetValue("rbot.aim.target.fov");
+        return 0, gui.GetValue("rbot.aim.target.fov");
     end
 
-    return gui.GetValue(GetActiveSubPath("lbot.weapon.target") .. ".maxfov"); 
+    local sPath = GetActiveSubPath("lbot.weapon.target");
+    return gui.GetValue(sPath .. ".minfov"), gui.GetValue(sPath .. ".maxfov"); 
 end
 
+local function DrawFilledRing(x0, y0, flInner, flOuter)
+    local fl2PI = 2 * math.pi;
+    local flSegSize = fl2PI / 45;
+
+    local x1, y1, x2, y2;
+    do
+        local c1, s1 = math.cos(-flSegSize), math.sin(-flSegSize);
+        local c2, s2 = math.cos(0), math.sin(0);
+
+        x1, y1 = x0 + math.floor(c1 * flInner + 0.5), y0 + math.floor(s1 * flInner + 0.5);
+        x2, y2 = x0 + math.floor(c1 * flOuter + 0.5), y0 + math.floor(s1 * flOuter + 0.5);
+        local x3, y3 = x0 + math.floor(c2 * flInner + 0.5), y0 + math.floor(s2 * flInner + 0.5);
+        local x4, y4 = x0 + math.floor(c2 * flOuter + 0.5), y0 + math.floor(s2 * flOuter + 0.5);
+
+        draw.Triangle(x1, y1, x2, y2, x4, y4);
+        draw.Triangle(x1, y1, x4, y4, x3, y3);
+
+        x1, y1, x2, y2 = x3, y3, x4, y4;
+    end
+
+    for i = 0, fl2PI - flSegSize / 2, flSegSize do
+        local c2, s2 = math.cos(i), math.sin(i);
+        local x3, y3 = x0 + math.floor(c2 * flInner + 0.5), y0 + math.floor(s2 * flInner + 0.5);
+        local x4, y4 = x0 + math.floor(c2 * flOuter + 0.5), y0 + math.floor(s2 * flOuter + 0.5);
+
+        draw.Triangle(x1, y1, x2, y2, x4, y4);
+        draw.Triangle(x1, y1, x4, y4, x3, y3);
+
+        x1, y1, x2, y2 = x3, y3, x4, y4;
+    end
+
+end
+
+local g_flInner = 0;
+local g_flOuter = 0;
+
 callbacks.Register("Draw", function()
-    if not (gui.GetValue("esp.master") and guiMasterSwitch:GetValue()) then
-        return;
-    end
-
-    if globals.MaxClients() == 1 then
-        return;
-    end
-
     local pLocalPlayer = entities.GetLocalPlayer();
-    if not pLocalPlayer then
+    if not (gui.GetValue("esp.master") and guiMasterSwitch:GetValue()) or globals.MaxClients() == 1 or not pLocalPlayer then
         return;
     end
 
@@ -78,21 +87,47 @@ callbacks.Register("Draw", function()
         return;
     end
 
-    UpdateScreenSize();
-
     local bRage = gui.GetValue("rbot.master");
-
     if not bRage and not gui.GetValue("lbot.master") then
         return;
     end
 
-    local flView = math.tan(math.rad((gui.GetValue("esp.world.fov") or 90) / 2));
-    local flAimbot = math.tan(math.rad(GetAimbotFov(bRage) / 2)); 
+    local flMin, flMax = GetAimbotFov(bRage);
 
-    local iRadius = math.floor(flAimbot / flView * stScreen.m_iHeight);
+    if flMin >= flMax then
+        return;
+    end
+
+    local vecViewOrigin = pLocalPlayer:GetAbsOrigin() + pLocalPlayer:GetPropVector("m_vecViewOffset");
+    local angViewAngles = engine.GetViewAngles();
+
+    local x0, y0 = draw.GetScreenSize();
+    x0, y0 = math.floor(x0 / 2), math.floor(y0 / 2);
+
+    local x1, y1 = client.WorldToScreen(vecViewOrigin + (angViewAngles:Forward() * 10000));
+    angViewAngles.x = angViewAngles.x + flMin;
+    local x2, y2 = client.WorldToScreen(vecViewOrigin + (angViewAngles:Forward()  * 10000));
+    angViewAngles.x = angViewAngles.x - flMin + flMax;
+    local x3, y3 = client.WorldToScreen(vecViewOrigin + (angViewAngles:Forward()  * 10000));
+
+    if not (x1 and y1 and x2 and y2 and x3 and y3) then
+        return;
+    end
+
+    local flLerp = math.min(globals.FrameTime() * 10, 0.5);
+    g_flInner = (math.sqrt((x2 - x1)^2 + (y2 - y1)^2) - g_flInner) * flLerp + g_flInner;
+    g_flOuter = (math.sqrt((x3 - x1)^2 + (y3 - y1)^2) - g_flOuter) * flLerp + g_flOuter;
 
     draw.Color(guiFilledColor:GetValue());
-    draw.FilledCircle(stScreen.m_iHalfWidth, stScreen.m_iHalfHeight, iRadius);
-    draw.Color(guiOutlineColor:GetValue());
-    draw.OutlinedCircle(stScreen.m_iHalfWidth, stScreen.m_iHalfHeight, iRadius);
+    if flMin ~= 0 then
+        DrawFilledRing(x0, y0, g_flInner, g_flOuter, 24)
+        draw.Color(guiOutlineColor:GetValue());
+        draw.OutlinedCircle(x0, y0, g_flInner);
+
+    else
+
+        draw.FilledCircle(x0, y0, g_flOuter);
+        draw.Color(guiOutlineColor:GetValue());
+    end
+    draw.OutlinedCircle(x0, y0, g_flOuter);
 end)
