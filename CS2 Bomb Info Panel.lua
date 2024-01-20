@@ -4,6 +4,8 @@ local guiX = gui.Slider(guiRef, "bombinfo_x", "Bomb Info X", 100, 0, 100000, 1);
 guiX:SetInvisible(true);
 local guiY = gui.Slider(guiRef, "bombinfo_y", "Bomb Info Y", 100, 0, 100000, 1);
 guiY:SetInvisible(true);
+local guiEnabled = gui.Checkbox(gui.Reference("Misc", "General", "Extra"), "bombinfo", "Show Bomb Info", false);
+guiEnabled:SetDescription("Shows information about the bomb.")
 
 local GetBombRadius = function() return 1750; end;
 do
@@ -220,7 +222,7 @@ local function GetBombInformation()
 end
 
 callbacks.Register("Draw", function()
-    if globals.MaxClients() <= 1 then
+    if globals.MaxClients() <= 1 or not guiEnabled:GetValue() then
         g_bDragging = false;
         return;
     end
@@ -236,7 +238,7 @@ callbacks.Register("Draw", function()
     local aElements = {};
     if not (g_iBombState == BOMB_NOTFOUND or g_iBombState == BOMB_DEAD or g_iBombState == BOMB_DROPPED) then
         if g_iBombState == BOMB_HELD then
-            aElements[#aElements + 1] = {255, 255, 255, ("%s has the bomb"):format(g_sBombOwner)};
+            aElements[#aElements + 1] = {255, 255, 255, ("Carrier: %s"):format(g_sBombOwner)};
 
         else
             if g_iBombState == BOMB_PLANTING then
