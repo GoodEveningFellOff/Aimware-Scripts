@@ -1,7 +1,7 @@
 local guiRef = gui.Reference("Misc", "General", "Extra");
 
 local guiHitmarker = gui.Editbox(guiRef, "hitmarker", "Hitmarker File");
-guiHitmarker:SetDescription("Name of the .vsnd_c file placed in the sounds\\ folder.");
+guiHitmarker:SetDescription("Name of the .vsnd_c file placed in the sounds folder.");
 
 local guiVolume = gui.Slider(guiRef, "hitmarker_volume", "Hitmarker Volume", 1, 0, 2, 0.05);
 guiVolume:SetDescription("Volume of the hitmarker.");
