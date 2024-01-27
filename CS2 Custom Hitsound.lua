@@ -1,10 +1,10 @@
 local guiRef = gui.Reference("Misc", "General", "Extra");
 
-local guiHitmarker = gui.Editbox(guiRef, "hitmarker", "Hitmarker File");
+local guiHitmarker = gui.Editbox(guiRef, "hitsound", "Hitsound File");
 guiHitmarker:SetDescription("Name of the .vsnd_c file placed in the sounds folder.");
 
-local guiVolume = gui.Slider(guiRef, "hitmarker_volume", "Hitmarker Volume", 1, 0, 2, 0.05);
-guiVolume:SetDescription("Volume of the hitmarker.");
+local guiVolume = gui.Slider(guiRef, "hitsound_volume", "Hitsound Volume", 1, 0, 1.5, 0.01);
+guiVolume:SetDescription("Volume of the hitsound.");
 
 local g_iLastHitTick = 0;
 callbacks.Register("FireGameEvent", function(ctx)
