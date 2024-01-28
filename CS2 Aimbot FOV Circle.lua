@@ -1,6 +1,6 @@
 local guiRef = gui.Reference("Visuals", "Other", "Extra");
 
-local guiMasterSwitch = gui.Checkbox(guiRef, "aimbot_fov_circle", "Aimbot Fov Circle", true);
+local guiMasterSwitch = gui.Checkbox(guiRef, "aimbot_fov_circle", "Aimbot Fov Circle", false);
 guiMasterSwitch:SetDescription("Visualize aimbot fov.");
 
 local guiFilledColor = gui.ColorPicker(guiMasterSwitch, "filled_fov_circle_clr", "Filled Fov Circle Clr", 255, 155, 55, 55);
@@ -130,12 +130,17 @@ local function CalculateRenderPoints(flMin, flMax, vecPunchAngles, flLastFiredWe
     angViewAngles.x = angViewAngles.x - flMin + flMax;
     local x3, y3 = client.WorldToScreen(g_vecLocalAimPos + (angViewAngles:Forward()  * 10000));
 
-    if not (x2 and y2 and x3 and y3) then
-        return false;
+    if (x2 and y2) then
+        g_flInnerRadius = (math.sqrt((x2 - x1)^2 + (y2 - y1)^2) - g_flInnerRadius) * flLerp + g_flInnerRadius;
+    else
+        g_flInnerRadius = (g_flHalfScreenWidth * 2 - g_flInnerRadius) * flLerp + g_flInnerRadius;
     end
-    
-    g_flInnerRadius = (math.sqrt((x2 - x1)^2 + (y2 - y1)^2) - g_flInnerRadius) * flLerp + g_flInnerRadius;
-    g_flOuterRadius = (math.sqrt((x3 - x1)^2 + (y3 - y1)^2) - g_flOuterRadius) * flLerp + g_flOuterRadius;
+
+    if (x3 and y3) then
+        g_flOuterRadius = (math.sqrt((x3 - x1)^2 + (y3 - y1)^2) - g_flOuterRadius) * flLerp + g_flOuterRadius;
+    else
+        g_flOuterRadius = (g_flHalfScreenWidth * 2 - g_flOuterRadius) * flLerp + g_flOuterRadius;
+    end
 
     return true;
 end
