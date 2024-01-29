@@ -1,27 +1,54 @@
 local guiRef = gui.Reference("Visuals", "World", "Helper");
 
-local guiEnabled = gui.Checkbox(guiRef, "bullet_impacts", "Bullet Impacts", false);
-guiEnabled:SetDescription("Visualize server bullet impacts.")
+local guiEnabled = gui.Combobox(guiRef, "bullet_impacts", "Bullet Impacts", "Disabled", "Enabled (hide advanced options)", "Enabled (show advanced options)");
+guiEnabled:SetDescription("Visualize server bullet impacts.");
 local guiColor = gui.ColorPicker(guiEnabled, "clr", "Clr", 55, 55, 255, 55);
+local guiSize = gui.Slider(guiRef, "bullet_impacts.size", "Size", 4, 1, 20, 0.25);
+guiSize:SetDescription("Side length of the box.");
+local guiDuration = gui.Slider(guiRef, "bullet_impacts.duration", "Duration", 4, 1, 10, 0.1);
+guiDuration:SetDescription("Duration of box visibility in seconds.");
+local guiFade = gui.Slider(guiRef, "bullet_impacts.fade", "Fade", 0.4, 0, 1, 0.025);
+guiFade:SetDescription("Fade in / out duration in seconds.");
 
-local g_flBoxSideLength = 4;
-local g_flShowDuration = 4.5;
+local g_bShown = false;
+guiSize:SetInvisible(true);
+guiDuration:SetInvisible(true);
+guiFade:SetInvisible(true);
 
-local function Draw3DCube(r, g, b, a, flDelta, iSize, v)
+local g_flSize = 0;
+local g_flDuration = 0;
+local g_flFade = 0;
+local g_flFadeInv = 0;
+
+local function Draw3DCube(r, g, b, a, flDelta, flSize, vecOrigin)
+    local flSize = flSize;
+
+    local flAlpha = 1;
+    if g_flFade ~= 0 then
+        if flDelta < g_flFade then
+            flAlpha = flDelta / g_flFade;
+        elseif flDelta > g_flFadeInv then
+            flAlpha = 1 - (flDelta - g_flFadeInv) / g_flFade;
+        end
+
+        flSize = flSize * flAlpha
+    end
+
+    local v = vecOrigin + Vector3(flSize / 2, flSize / 2, flSize / 2);
     local x1, y1 = client.WorldToScreen(v); -- [+1, +1, +1]
-    v.x = v.x - iSize;
+    v.x = v.x - flSize;
     local x2, y2 = client.WorldToScreen(v); -- [-1, +1, +1]
-    v.y = v.y - iSize;
+    v.y = v.y - flSize;
     local x3, y3 = client.WorldToScreen(v); -- [-1, -1, +1]
-    v.x = v.x + iSize;
+    v.x = v.x + flSize;
     local x4, y4 = client.WorldToScreen(v); -- [+1, -1, +1]
-    v.z = v.z - iSize;
+    v.z = v.z - flSize;
     local x5, y5 = client.WorldToScreen(v); -- [+1, -1, -1]
-    v.x = v.x - iSize;
+    v.x = v.x - flSize;
     local x6, y6 = client.WorldToScreen(v); -- [-1, -1, -1]
-    v.y = v.y + iSize;
+    v.y = v.y + flSize;
     local x7, y7 = client.WorldToScreen(v); -- [-1, +1, -1]
-    v.x = v.x + iSize;
+    v.x = v.x + flSize;
     local x8, y8 = client.WorldToScreen(v); -- [+1, +1, -1]
 
     if not (x1 and y1 and x2 and y2 and 
@@ -31,12 +58,7 @@ local function Draw3DCube(r, g, b, a, flDelta, iSize, v)
         return;
     end
 
-    local flAlpha = 1;
-    if flDelta < 0.1 then
-        flAlpha = flDelta / 0.1;
-    elseif flDelta > 0.9 then
-        flAlpha = 1 - (flDelta - 0.9) / 0.1
-    end
+    
 
     -- OUTLINE
     draw.Color(r, g, b, math.floor(flAlpha * 255));
@@ -81,7 +103,21 @@ end
 local g_aImpacts = {};
 local g_iLocalIndex = 0;
 callbacks.Register("Draw", function()
-    if not guiEnabled:GetValue() then
+    local iEnabled = guiEnabled:GetValue();
+    if g_bShown ~= (iEnabled == 2) then
+        g_bShown = (iEnabled == 2);
+        guiSize:SetInvisible(not g_bShown);
+        guiDuration:SetInvisible(not g_bShown);
+        guiFade:SetInvisible(not g_bShown);
+    end
+
+    g_flSize = guiSize:GetValue() or 0;
+    g_flDuration = guiDuration:GetValue() or 0;
+    g_flFade = math.min((guiFade:GetValue() or 0) / g_flDuration, 0.5);
+    g_flFadeInv = 1 - g_flFade;
+
+
+    if iEnabled == 0 then
         g_aImpacts = {};
         return;
     end
@@ -91,19 +127,19 @@ callbacks.Register("Draw", function()
         g_iLocalIndex = pLocalPlayer:GetIndex();
     end
     
-    local vecHalfSize = Vector3(g_flBoxSideLength / 2, g_flBoxSideLength / 2, g_flBoxSideLength / 2);
+    local vecHalfSize = Vector3(g_flSize / 2, g_flSize / 2, g_flSize / 2);
 
     local r, g, b, a = guiColor:GetValue();
     
     local flRealTime = globals.RealTime();
     for i, stData in pairs(g_aImpacts) do
 
-        local flDelta = math.abs(flRealTime - stData[2]) / g_flShowDuration;
+        local flDelta = math.abs(flRealTime - stData[2]) / g_flDuration;
         if flDelta > 1 then
             g_aImpacts[i] = nil;
 
         else
-            Draw3DCube(r, g, b, a, flDelta, g_flBoxSideLength, stData[1] + vecHalfSize);
+            Draw3DCube(r, g, b, a, flDelta, g_flSize, stData[1]);
         end
     end
 
