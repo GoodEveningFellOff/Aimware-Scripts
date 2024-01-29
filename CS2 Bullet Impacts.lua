@@ -5,7 +5,7 @@ guiEnabled:SetDescription("Visualize server bullet impacts.");
 local guiColor = gui.ColorPicker(guiEnabled, "clr", "Clr", 55, 55, 255, 55);
 local guiSize = gui.Slider(guiRef, "bullet_impacts.size", "Size", 4, 1, 20, 0.25);
 guiSize:SetDescription("Side length of the box.");
-local guiDuration = gui.Slider(guiRef, "bullet_impacts.duration", "Duration", 4, 1, 10, 0.1);
+local guiDuration = gui.Slider(guiRef, "bullet_impacts.duration", "Duration", 4.8, 1, 10, 0.1);
 guiDuration:SetDescription("Duration of box visibility in seconds.");
 local guiFade = gui.Slider(guiRef, "bullet_impacts.fade", "Fade", 0.4, 0, 1, 0.025);
 guiFade:SetDescription("Fade in / out duration in seconds.");
