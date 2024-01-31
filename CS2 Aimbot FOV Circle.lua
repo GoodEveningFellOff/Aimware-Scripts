@@ -104,13 +104,15 @@ local function CalculateRenderPoints(flMin, flMax, vecPunchAngles, flLastFiredWe
     
     local sSubPath = GetActiveSubPath("lbot.weapon.accuracy");
     if vecPunchAngles and gui.GetValue(sSubPath .. ".rcs") ~= 0 and math.abs(flLastFiredWeaponTime) < 0.15 then
-        local flRCSX = vecPunchAngles.x * 2 * (gui.GetValue(sSubPath .. ".vrecoil") or 0) / 100;
-        local flRCSY = vecPunchAngles.y * 2 * (gui.GetValue(sSubPath .. ".hrecoil") or 0) / 100;
+        local flRCSX, flRCSY = (gui.GetValue(sSubPath .. ".vrecoil") or 0) / 100, (gui.GetValue(sSubPath .. ".hrecoil") or 0) / 100;
 
         if not gui.GetValue("esp.other.norecoil") then
-            flRCSX = math.min(flRCSX - vecPunchAngles.x, 0);
-            flRCSY = flRCSY - vecPunchAngles.y;
+            flRCSX = math.max(flRCSX - 0.5, 0);
+            flRCSY = math.max(flRCSY - 0.5, 0);
         end
+
+        flRCSX = flRCSX * vecPunchAngles.x * 2;
+        flRCSY = flRCSY * vecPunchAngles.y * 2;
 
         angViewAngles.x = angViewAngles.x + flRCSX;
         angViewAngles.y = angViewAngles.y + flRCSY;
