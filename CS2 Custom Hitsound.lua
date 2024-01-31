@@ -3,7 +3,7 @@ local guiRef = gui.Reference("Misc", "General", "Extra");
 local guiSelection = gui.Combobox(guiRef, "hitsound", "Hitsound", "Hide", "Show General Settings", "Show File Inputs");
 guiSelection:SetDescription("Uses .vsnd_c files placed in the sounds folder.");
 
-local guiRepeatFix = gui.Checkbox(guiRef, "hitsound.repeatfix", "Repeat Fix", false);
+local guiRepeatFix = gui.Checkbox(guiRef, "hitsound.repeatfix", "Repeat Fix", true);
 guiRepeatFix:SetDescription("Prevent sounds repeating on the same tick.");
 guiRepeatFix:SetInvisible(true);
 
