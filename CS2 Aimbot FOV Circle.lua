@@ -107,6 +107,11 @@ local function CalculateRenderPoints(flMin, flMax, vecPunchAngles, flLastFiredWe
         local flRCSX = vecPunchAngles.x * 2 * (gui.GetValue(sSubPath .. ".vrecoil") or 0) / 100;
         local flRCSY = vecPunchAngles.y * 2 * (gui.GetValue(sSubPath .. ".hrecoil") or 0) / 100;
 
+        if not gui.GetValue("esp.other.norecoil") then
+            flRCSX = math.min(flRCSX - vecPunchAngles.x, 0);
+            flRCSY = flRCSY - vecPunchAngles.y;
+        end
+
         angViewAngles.x = angViewAngles.x + flRCSX;
         angViewAngles.y = angViewAngles.y + flRCSY;
         local flGoalRCSX, flGoalRCSY = client.WorldToScreen(g_vecLocalAimPos + (angViewAngles:Forward() * 10000));
