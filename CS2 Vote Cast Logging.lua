@@ -1,3 +1,18 @@
+local function GetEventPlayerController(ctx, str)
+	if (type(ctx) ~= "userdata") then
+		return;
+	end
+
+	local iPlayerControllerIndex = ctx:GetInt(str);
+	if (not iPlayerControllerIndex) then
+		return;
+	end
+
+	local pPlayerController = entities.GetByIndex(iPlayerControllerIndex + 1);
+	return (pPlayerController and pPlayerController:GetClass() == "CCSPlayerController") and pPlayerController or nil;
+end
+
+
 local ETeams = {
   [0] = "U";
   [1] = "S";
