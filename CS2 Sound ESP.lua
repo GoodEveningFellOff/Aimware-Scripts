@@ -29,7 +29,7 @@ local g_aSounds = {};
 
 client.AllowListener("player_sound");
 callbacks.Register("FireGameEvent", function(ctx)
-	if (ctx:GetName() ~= "player_sound") then
+	if (ctx:GetName() ~= "player_sound" or not gui.GetValue("esp.master")) then
 		return;
 	end
 
