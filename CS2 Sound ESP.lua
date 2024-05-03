@@ -1,10 +1,10 @@
 local guiEnemySounds = gui.Checkbox(gui.Reference("Visuals", "Overlay", "Enemy"), "sounds", "Sounds", false);
 guiEnemySounds:SetDescription("Visualize player sounds.");
-local guiEnemySoundsColor = gui.ColorPicker(guiEnemySounds, "clr", "clr", 255, 55, 55, 255);
+local guiEnemySoundsColor = gui.ColorPicker(guiEnemySounds, "clr", "clr", 255, 55, 55, 100);
 
 local guiFriendlySounds = gui.Checkbox(gui.Reference("Visuals", "Overlay", "Friend"), "sounds", "Sounds", false);
 guiFriendlySounds:SetDescription("Visualize player sounds.");
-local guiFriendlySoundsColor = gui.ColorPicker(guiFriendlySounds, "clr", "clr", 55, 155, 255, 255);
+local guiFriendlySoundsColor = gui.ColorPicker(guiFriendlySounds, "clr", "clr", 55, 155, 255, 100);
 
 local function AreTeamsEnemies(eTeam1, eTeam2)
 	-- In deathmatch mode or teams are not equal and neither team is "Unassigned" or "Spectator"
