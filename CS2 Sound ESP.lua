@@ -71,37 +71,45 @@ end)
 
 local g_kSegments = 31;
 local g_kSegmentSize = (math.pi * 2) / g_kSegments;
-local g_kDuration = 1;
+local g_kDuration = 1.2;
+local g_kFadeOut = 0.2;
 local g_kStartRadius = 2;
 local g_kIncreaseRadius = 20;
+local g_kWidth = 2;
 
-local function Draw3DCircle(vecOrigin, flRadius, flSegmentRadianSize)
+local function Draw3DCircle(vecOrigin, flRadius, flWidth, flSegmentRadianSize)
+	local vecWidthOffset = Vector3(0, 0, flWidth * 0.5);
+
 	-- Get all of the circle's points into an array of points, a failed WorldToScreen call will result in the function returning
 	local aPoints = {};
 	for i = 0, math.pi * 2, flSegmentRadianSize do
-		local x, y = client.WorldToScreen(vecOrigin + Vector3(math.cos(i) * flRadius, math.sin(i) * flRadius, 0));
+		local vecCircleSegment = vecOrigin + Vector3(math.cos(i) * flRadius, math.sin(i) * flRadius, 0);
 
-		if (not x or not y) then
+		local x0, y0 = client.WorldToScreen(vecCircleSegment - vecWidthOffset);
+		local x1, y1 = client.WorldToScreen(vecCircleSegment + vecWidthOffset);
+
+		if (not (x0 and y0 and x1 and y1)) then
 			return;
 		end
 
-		aPoints[#aPoints + 1] = { x, y };
+		aPoints[#aPoints + 1] = { x0, y0, x1, y1 };
 	end
 
 	for i = 2, #aPoints do
-		local x1, y1 = unpack(aPoints[i - 1]);
-		local x2, y2 = unpack(aPoints[i]);
+		local aLine1 = aPoints[i - 1];
+		local aLine2 = aPoints[i];
 
-		-- Make the circle *thicker*
-		if (math.abs(x2 - x1) < math.abs(y2 - y1)) then
-			draw.Line(x1 - 1, y1, x2 - 1, y2);
-			draw.Line(x1 + 1, y1, x2 + 1, y2);
-		else
-			draw.Line(x1, y1 - 1, x2, y2 - 1);
-			draw.Line(x1, y1 + 1, x2, y2 + 1);
-		end
+		draw.Triangle(
+			aLine1[1], aLine1[2],
+			aLine1[3], aLine1[4],
+			aLine2[3], aLine2[4]
+		);
 
-		draw.Line(x1, y1, x2, y2);
+		draw.Triangle(
+			aLine1[1], aLine1[2],
+			aLine2[3], aLine2[4],
+			aLine2[1], aLine2[2]
+		);
 	end
 end
 
@@ -118,15 +126,15 @@ callbacks.Register("Draw", function()
 
 		else
 
-			if (stData.m_bEnemy) then
-				draw.Color(unpack(clrEnemy));
-			else
-				draw.Color(unpack(clrFriendly));
-			end
+			local r, g, b, a = unpack(stData.m_bEnemy and clrEnemy or clrFriendly);
+
+			local flFadeOut = (1 - (dflTime - g_kDuration + g_kFadeOut) / g_kFadeOut);
+			draw.Color(r, g, b, (flFadeOut < 1) and math.floor(a * flFadeOut) or a);
 
 			Draw3DCircle(
 				stData.m_vecOrigin,
 				g_kStartRadius + (dflTime / g_kDuration) * g_kIncreaseRadius,
+				g_kWidth,
 				g_kSegmentSize
 			);
 
