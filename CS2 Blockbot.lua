@@ -94,7 +94,7 @@ callbacks.Register("PreMove", function(cmd)
     local flTickInterval = globals.TickInterval();
 
     local vecLocalOrigin = pLocalPlayer:GetAbsOrigin();
-    local vecLocalVelocity = pLocalPlayer:GetPropVector("m_vecVelocity");
+    local vecLocalVelocity = pLocalPlayer:GetPropVector("m_vecVelocity") * flTickInterval * 3;
     local vecTargetOrigin = g_pTargetPlayer:GetAbsOrigin();
     local vecTargetVelocity = g_pTargetPlayer:GetPropVector("m_vecVelocity") * flTickInterval;
 
@@ -133,10 +133,12 @@ callbacks.Register("PreMove", function(cmd)
 
             -- If our predicted velocity will have us going past the target, counterstrafe
             if((vecDeltaOrigin.x > 0 and vecDeltaOrigin.x - vecLocalVelocity.x < 0) or (vecDeltaOrigin.x < 0 and vecDeltaOrigin.x - vecLocalVelocity.x > 0)) then
+				print("CX");
                 flXMove = -vecDeltaOrigin.x;
             
             -- Otherwise just move twords the target
             else
+				print("NX")
                 flXMove = vecDeltaOrigin.x;
             end
         end
@@ -146,13 +148,16 @@ callbacks.Register("PreMove", function(cmd)
 
         -- 0.5 Unit deadzone
         if(math.abs(vecDeltaOrigin.y) > 0.5)then
+			print(string.format("vd.y = %f, vl.y = %f", vecDeltaOrigin.y, vecLocalVelocity.y))
 
             -- If our predicted velocity will have us going past the target, counterstrafe
             if((vecDeltaOrigin.y > 0 and vecDeltaOrigin.y - vecLocalVelocity.y < 0) or (vecDeltaOrigin.y < 0 and vecDeltaOrigin.y - vecLocalVelocity.y > 0)) then
+				print("CY");
                 flYMove = -vecDeltaOrigin.y;
             
             -- Otherwise just move twords the target
             else
+				print("NY");
                 flYMove = vecDeltaOrigin.y;
             end
         end
